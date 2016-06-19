@@ -8,6 +8,10 @@ chrome.omnibox.onInputChanged.addListener(
     // Prepare description text
     var description;
     text = text.trim();
+    if (text.length < 3) {
+      chrome.omnibox.setDefaultSuggestion({ "description": "At lest three charachters..."});
+      return;
+    }
     text = text.replace(/,/g, ' ');
     var inputTokens = text.split(' ');
     inputTokens = inputTokens.filter(function(value){
@@ -17,7 +21,16 @@ chrome.omnibox.onInputChanged.addListener(
     chrome.bookmarks.search(text, function (results) {
       if (results) {
         var newArray = results.map(function (currentValue, index, array) {
-          description = currentValue.title;
+          // First escape special XML charachters
+          // stackoverflow.com/a/1091953/89484
+          description = currentValue.title.
+            replace('"', "&quot;").
+            replace("'", "&apos;").
+            replace("<", "&lt;").
+            replace(">", "&gt;").
+            replace("&", "&amp;");
+          
+          // Highlight all tokens
           inputTokens.forEach(function (token, index, array) {
             var re = new RegExp(token, "ig");
             description = description.replace(re, "<match>$&</match>");
@@ -40,6 +53,7 @@ chrome.omnibox.onInputChanged.addListener(
       }
       catch (error) {
         console.log(error);
+        throw error;
       }
     }
   });
