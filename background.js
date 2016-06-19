@@ -8,33 +8,55 @@ chrome.omnibox.onInputChanged.addListener(
     // Prepare description text
     var description;
     text = text.trim();
-    if (text.length < 3) {
-      chrome.omnibox.setDefaultSuggestion({ "description": "At lest three charachters..."});
-      return;
-    }
     text = text.replace(/,/g, ' ');
-    var inputTokens = text.split(' ');
-    inputTokens = inputTokens.filter(function(value){
-      return value != "";
+    var inputTokens = [];
+    // Remove duplicate tokens
+    text.split(' ').forEach(function(value){
+      if (value !== "" && !inputTokens.includes(value)) {
+        inputTokens.push(value);
+      }
     });
+    
+    // Longest token first
+    inputTokens = inputTokens.sort(function(a, b) {
+      return a.length <= b.length;
+    });
+
     // Search bookmarks for the given text
     chrome.bookmarks.search(text, function (results) {
       if (results) {
         var newArray = results.map(function (currentValue, index, array) {
-          // First escape special XML charachters
+          description = currentValue.title;
+          // Highlight all tokens
+          inputTokens.forEach(function (token, index, array) {
+            // We want to ignore the match tag itself from being altered.
+            // http://stackoverflow.com/a/15389296/157216 - negative look-ahead
+            var re = new RegExp( "(" + token + "(?![^<>]*>))", 'ig' );
+            description = description.replace(re, "<match>$&</match>");
+          });
+          
+          // A workaround in order to keep match tags untouched. 
+          // This might be replaced with a regex.
+          re1 = new RegExp("<match>", "ig");
+          description = description.replace(re1,"70747138-8714-4c36-8e1b-af696320575e");
+          re2 = new RegExp("</match>", "ig");
+          description = description.replace(re2, "7278d0d5-73f5-4fa1-9921-3b2cda1f4322");
+          
+          // Escape special XML charachters
           // stackoverflow.com/a/1091953/89484
-          description = currentValue.title.
+          description = description.
             replace('"', "&quot;").
             replace("'", "&apos;").
             replace("<", "&lt;").
             replace(">", "&gt;").
             replace("&", "&amp;");
           
-          // Highlight all tokens
-          inputTokens.forEach(function (token, index, array) {
-            var re = new RegExp(token, "ig");
-            description = description.replace(re, "<match>$&</match>");
-          });
+          // Put them back.
+          re3 = new RegExp("70747138-8714-4c36-8e1b-af696320575e", "ig");
+          description = description.replace(re3, "<match>");
+          re4 = new RegExp("7278d0d5-73f5-4fa1-9921-3b2cda1f4322", "ig");
+          description = description.replace(re4, "</match>");
+
           return { content: currentValue.url,
                    description: description };
           });
@@ -44,7 +66,8 @@ chrome.omnibox.onInputChanged.addListener(
       if (newArray.length == 0) {
         message = "Nothing interesting yet."
       } else {
-        message = newArray.length + " results found.";
+        message = "Displaying " + newArray.slice(0, 5).length + " out of " + newArray.length + " results.";
+        //message = newArray.length + " results found.";
       }
       chrome.omnibox.setDefaultSuggestion({ "description": message });
       
@@ -53,7 +76,6 @@ chrome.omnibox.onInputChanged.addListener(
       }
       catch (error) {
         console.log(error);
-        throw error;
       }
     }
   });
