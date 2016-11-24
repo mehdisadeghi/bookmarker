@@ -43,13 +43,12 @@ chrome.omnibox.onInputChanged.addListener(
           description = description.replace(re2, "7278d0d5-73f5-4fa1-9921-3b2cda1f4322");
           
           // Escape special XML charachters
-          // stackoverflow.com/a/1091953/89484
           description = description.
-            replace('"', "&quot;").
-            replace("'", "&apos;").
-            replace("<", "&lt;").
-            replace(">", "&gt;").
-            replace("&", "&amp;");
+            replace('"', "\"").
+            replace("'", "\'").
+            replace("<", "\<").
+            replace(">", "\>").
+            replace("&", "\&");
           
           // Put them back.
           re3 = new RegExp("70747138-8714-4c36-8e1b-af696320575e", "ig");
